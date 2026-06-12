@@ -147,6 +147,26 @@
       opacity: 1;
     }
 
+    /* ─── 3D Rolling Plates ────────────────────────────────── */
+    #hero-plates-container {
+      perspective: 1500px;
+    }
+    .plate-3d {
+      opacity: 0;
+      transform: translate3d(0, 80px, -200px) rotateX(30deg) rotateY(15deg);
+      transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+      will-change: transform, opacity;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.75), 
+                  inset 0 1px 0 rgba(232, 226, 217, 0.08);
+      border-radius: 8px;
+    }
+    .plate-3d img {
+      transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .plate-3d:hover img {
+      transform: scale(1.06);
+    }
+
     /* ─── Misc ─────────────────────────────────────────────── */
     ::selection { background: rgba(168,144,96,0.3); }
     .nav-link {
@@ -275,6 +295,40 @@
              class="font-sans text-xs font-medium tracking-widest uppercase px-8 py-4 border border-stone/20 text-stone/60 hover:border-stone/50 hover:text-stone transition-all duration-300 rounded-sm w-full sm:w-auto text-center">
             Get Admitted
           </a>
+        </div>
+      </div>
+
+      <!-- 3D Rolling Plates Container -->
+      <div id="hero-plates-container" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 hidden">
+        <div class="plates-wrapper relative w-full h-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-around gap-8">
+          
+          <!-- Plate 1: Physics -->
+          <div id="plate-physics" class="plate-3d absolute md:relative pointer-events-auto bg-forest/40 backdrop-blur-md border border-moss/30 p-4 rounded-lg shadow-2xl flex flex-col items-center w-64 md:w-72 transition-all duration-300">
+            <div class="relative w-full aspect-[4/3] rounded overflow-hidden mb-4 border border-moss/20">
+              <img src="./files/physics_plate.png" alt="Physics Concepts" class="w-full h-full object-cover">
+            </div>
+            <h4 class="font-serif text-stone text-lg font-bold">Physics</h4>
+            <p class="font-sans text-stone/50 text-xs text-center mt-1">Quantum Mechanics &amp; Electrodynamics</p>
+          </div>
+
+          <!-- Plate 2: Chemistry -->
+          <div id="plate-chemistry" class="plate-3d absolute md:relative pointer-events-auto bg-forest/40 backdrop-blur-md border border-gold/30 p-4 rounded-lg shadow-2xl flex flex-col items-center w-64 md:w-72 transition-all duration-300">
+            <div class="relative w-full aspect-[4/3] rounded overflow-hidden mb-4 border border-gold/20">
+              <img src="./files/chemistry_plate.png" alt="Chemistry Reactions" class="w-full h-full object-cover">
+            </div>
+            <h4 class="font-serif text-stone text-lg font-bold">Chemistry</h4>
+            <p class="font-sans text-stone/50 text-xs text-center mt-1">Organic Mechanisms &amp; Kinetics</p>
+          </div>
+
+          <!-- Plate 3: Mathematics -->
+          <div id="plate-mathematics" class="plate-3d absolute md:relative pointer-events-auto bg-forest/40 backdrop-blur-md border border-bark/60 p-4 rounded-lg shadow-2xl flex flex-col items-center w-64 md:w-72 transition-all duration-300">
+            <div class="relative w-full aspect-[4/3] rounded overflow-hidden mb-4 border border-bark/40">
+              <img src="./files/math_plate.png" alt="Mathematical Calculus" class="w-full h-full object-cover">
+            </div>
+            <h4 class="font-serif text-stone text-lg font-bold">Mathematics</h4>
+            <p class="font-sans text-stone/50 text-xs text-center mt-1">Advanced Calculus &amp; Geometry</p>
+          </div>
+
         </div>
       </div>
 
@@ -604,6 +658,11 @@
     // Scroll → map hero section scroll progress to frame index
     const heroEl = document.getElementById('hero');
     const textLayer = document.getElementById('hero-text-layer');
+    const platesContainer = document.getElementById('hero-plates-container');
+    const platePhysics = document.getElementById('plate-physics');
+    const plateChemistry = document.getElementById('plate-chemistry');
+    const plateMathematics = document.getElementById('plate-mathematics');
+
     function onHeroScroll() {
       const rect   = heroEl.getBoundingClientRect();
       const total  = heroEl.offsetHeight - window.innerHeight;
@@ -621,6 +680,101 @@
         textLayer.style.opacity = opacity;
         textLayer.style.transform = `translateY(${translateY}px) scale(${scale})`;
         textLayer.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
+      }
+
+      // 3D Plates animation logic
+      if (platesContainer) {
+        const showPlates = frac > 0.15 && frac < 0.88;
+        platesContainer.classList.toggle('hidden', !showPlates);
+        
+        if (showPlates) {
+          const isMobile = window.innerWidth < 768;
+
+          // Helper to animate a single plate
+          function animatePlate(plate, startIn, endIn, startOut, endOut, startPos, activePos, endPos, startRot, activeRot, endRot) {
+            if (!plate) return;
+            
+            let opacity = 0;
+            let pos = { ...startPos };
+            let rot = { ...startRot };
+            
+            if (frac >= startIn && frac < endIn) {
+              // Fading and sliding in
+              const t = (frac - startIn) / (endIn - startIn);
+              opacity = t;
+              pos.x = startPos.x + (activePos.x - startPos.x) * t;
+              pos.y = startPos.y + (activePos.y - startPos.y) * t;
+              pos.z = startPos.z + (activePos.z - startPos.z) * t;
+              
+              rot.rx = startRot.rx + (activeRot.rx - startRot.rx) * t;
+              rot.ry = startRot.ry + (activeRot.ry - startRot.ry) * t;
+              rot.rz = startRot.rz + (activeRot.rz - startRot.rz) * t;
+            } else if (frac >= endIn && frac < startOut) {
+              // Active / Fully visible
+              opacity = 1;
+              pos = { ...activePos };
+              rot = { ...activeRot };
+              
+              // Add a tiny floating parallax based on scroll
+              const floatFrac = (frac - endIn) / (startOut - endIn);
+              pos.y += Math.sin(floatFrac * Math.PI) * 12; // slow bounce
+              rot.ry += Math.cos(floatFrac * Math.PI) * 4;  // slow twist
+            } else if (frac >= startOut && frac < endOut) {
+              // Fading and sliding out
+              const t = (frac - startOut) / (endOut - startOut);
+              opacity = 1 - t;
+              pos.x = activePos.x + (endPos.x - activePos.x) * t;
+              pos.y = activePos.y + (endPos.y - activePos.y) * t;
+              pos.z = activePos.z + (endPos.z - activePos.z) * t;
+              
+              rot.rx = activeRot.rx + (endRot.rx - activeRot.rx) * t;
+              rot.ry = activeRot.ry + (endRot.ry - activeRot.ry) * t;
+              rot.rz = activeRot.rz + (endRot.rz - activeRot.rz) * t;
+            } else if (frac >= endOut) {
+              opacity = 0;
+              pos = { ...endPos };
+              rot = { ...endRot };
+            }
+            
+            plate.style.opacity = opacity;
+            plate.style.transform = `translate3d(${pos.x}px, ${pos.y}px, ${pos.z}px) rotateX(${rot.rx}deg) rotateY(${rot.ry}deg) rotateZ(${rot.rz}deg)`;
+            plate.style.pointerEvents = opacity < 0.1 ? 'none' : 'auto';
+          }
+
+          // Define mobile vs desktop coordinates
+          const physStartStr = isMobile ? { x: -100, y: 50, z: -150 } : { x: -80, y: 100, z: -250 };
+          const physEndStr   = isMobile ? { x: 100, y: -50, z: -150 } : { x: -50, y: -150, z: -150 };
+          
+          const chemStartStr = isMobile ? { x: 100, y: 50, z: -150 } : { x: 80, y: 100, z: -250 };
+          const chemEndStr   = isMobile ? { x: -100, y: -50, z: -150 } : { x: 50, y: -150, z: -150 };
+          
+          const mathStartStr = isMobile ? { x: 0, y: 150, z: -200 }  : { x: 0, y: 120, z: -300 };
+          const mathEndStr   = isMobile ? { x: 0, y: -150, z: -150 } : { x: 0, y: -150, z: -150 };
+
+          // 1. Physics Plate
+          animatePlate(
+            platePhysics,
+            0.18, 0.28, 0.44, 0.54,
+            physStartStr, { x: 0, y: 0, z: 0 }, physEndStr,
+            { rx: 35, ry: 40, rz: -8 }, { rx: 8, ry: 15, rz: -4 }, { rx: -25, ry: -10, rz: 8 }
+          );
+
+          // 2. Chemistry Plate
+          animatePlate(
+            plateChemistry,
+            0.32, 0.42, 0.58, 0.68,
+            chemStartStr, { x: 0, y: 0, z: 0 }, chemEndStr,
+            { rx: 35, ry: -40, rz: 8 }, { rx: 10, ry: -12, rz: 3 }, { rx: -25, ry: 10, rz: -8 }
+          );
+
+          // 3. Mathematics Plate
+          animatePlate(
+            plateMathematics,
+            0.46, 0.56, 0.72, 0.82,
+            mathStartStr, { x: 0, y: 0, z: 0 }, mathEndStr,
+            { rx: 50, ry: 0, rz: 0 }, { rx: 12, ry: 0, rz: 0 }, { rx: -40, ry: 0, rz: 0 }
+          );
+        }
       }
     }
     window.addEventListener('scroll', onHeroScroll, { passive: true });
